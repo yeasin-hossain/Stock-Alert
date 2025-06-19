@@ -1,0 +1,4 @@
+login_url: "https://test-oms-api.ecosoftbd.com/api/login"
+signalr_url: "https://test-oms-api.ecosoftbd.com/api-hub"
+username: "yeasin"
+password: "yeasin"
