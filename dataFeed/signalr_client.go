@@ -39,6 +39,13 @@ func ConnectAndLogSignalR(cfg *Config, token string) error {
 	client.Start() // Start does not return a value
 	log.Println("SignalR client started. Listening for messages...")
 
+	// Subscribe to the 'SubscribeToSharePriceUpdatedEvent' channel/event with arguments
+	go func() {
+		args := []interface{}{"500$1$$Asc", "DSE", nil, "", "", "", []interface{}{}, "", nil, false, nil}
+		result := <-client.Invoke("SubscribeToSharePriceUpdatedEvent", args...)
+		log.Printf("Subscribed to SubscribeToSharePriceUpdatedEvent, result: %v", result)
+	}()
+
 	<-ctx.Done()
 	return nil
 }
@@ -47,5 +54,16 @@ func ConnectAndLogSignalR(cfg *Config, token string) error {
 type SignalRReceiver struct{}
 
 func (r *SignalRReceiver) Receive(method string, args ...interface{}) {
-	log.Printf("Received SignalR message: method=%s args=%v", method, args)
+	if method == "SharePriceUpdated" && len(args) > 0 {
+		if str, ok := args[0].(string); ok {
+			log.Printf("SharePriceUpdated received: %s", str)
+			// Example: parse the string if needed
+			// fields := strings.Split(str, "~")
+			// log.Printf("Parsed fields: %v", fields)
+		} else {
+			log.Printf("SharePriceUpdated received (non-string): %v", args[0])
+		}
+	} else {
+		log.Printf("Received SignalR message: method=%s args=%v", method, args)
+	}
 }
