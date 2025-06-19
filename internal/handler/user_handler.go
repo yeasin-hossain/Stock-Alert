@@ -7,14 +7,14 @@ import (
 	
 	"github.com/gorilla/mux"
 	"github.com/hello-api/internal/domain"
-	"github.com/hello-api/internal/service"
+	"github.com/hello-api/internal/handler/dto"
 )
 
 type UserHandler struct {
-	userService *service.UserService
+	userService domain.UserService
 }
 
-func NewUserHandler(userService *service.UserService) *UserHandler {
+func NewUserHandler(userService domain.UserService) *UserHandler {
 	return &UserHandler{
 		userService: userService,
 	}
@@ -41,6 +41,11 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.userService.GetUserByID(id)
 	if err != nil {
+		http.Error(w, "Error fetching user", http.StatusInternalServerError)
+		return
+	}
+	
+	if user == nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
@@ -50,15 +55,21 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
-	var user domain.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	var request dto.UserCreateRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	createdUser, err := h.userService.CreateUser(user)
+	// Validate request (basic validation)
+	if request.Name == "" || request.Email == "" {
+		http.Error(w, "Name and email are required", http.StatusBadRequest)
+		return
+	}
+
+	createdUser, err := h.userService.CreateUser(request)
 	if err != nil {
-		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		http.Error(w, "Failed to create user: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -75,16 +86,25 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var user domain.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	var request dto.UserUpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 	
-	user.ID = id
-	updatedUser, err := h.userService.UpdateUser(user)
+	// Check if at least one field is provided
+	if request.Name == "" && request.Email == "" {
+		http.Error(w, "At least one field (name or email) must be provided", http.StatusBadRequest)
+		return
+	}
+	
+	updatedUser, err := h.userService.UpdateUser(id, request)
 	if err != nil {
-		http.Error(w, "Failed to update user", http.StatusInternalServerError)
+		if err == domain.ErrUserNotFound {
+			http.Error(w, "User not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to update user: "+err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -100,8 +120,13 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.userService.DeleteUser(id); err != nil {
-		http.Error(w, "Failed to delete user", http.StatusInternalServerError)
+	err = h.userService.DeleteUser(id)
+	if err != nil {
+		if err == domain.ErrUserNotFound {
+			http.Error(w, "User not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to delete user: "+err.Error(), http.StatusInternalServerError)
+		}
 		return
 	}
 

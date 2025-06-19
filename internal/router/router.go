@@ -2,19 +2,28 @@ package router
 
 import (
 	"github.com/gorilla/mux"
+	"github.com/hello-api/internal/db"
+	"github.com/hello-api/internal/domain"
 	"github.com/hello-api/internal/handler"
 	"github.com/hello-api/internal/repository"
 	"github.com/hello-api/internal/service"
-	"github.com/hello-api/internal/db"
 )
 
 func InitializeRoutes() *mux.Router {
 	r := mux.NewRouter()
 
-	// Initialize dependencies
+	// Initialize dependencies using interfaces for better decoupling
 	userCollection := db.GetCollection("users")
-	userRepository := repository.NewMongoUserRepository(userCollection)
-	userService := service.NewUserService(userRepository)
+	
+	// Repository layer
+	var userRepository domain.UserRepository
+	userRepository = repository.NewMongoUserRepository(userCollection)
+	
+	// Service layer
+	var userService domain.UserService
+	userService = service.NewUserService(userRepository)
+	
+	// Handler layer
 	userHandler := handler.NewUserHandler(userService)
 
 	// User routes
