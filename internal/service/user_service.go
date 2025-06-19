@@ -1,9 +1,10 @@
 package service
 
 import (
+	"fmt"
 	"strings"
 	"time"
-	
+
 	"github.com/hello-api/internal/domain"
 	"github.com/hello-api/internal/handler/dto"
 	"github.com/hello-api/internal/repository/entity"
@@ -66,16 +67,16 @@ func (s *UserService) GetUserByID(id string) (*dto.UserResponse, error) {
 func (s *UserService) CreateUser(userDTO dto.UserCreateRequest) (*dto.UserResponse, error) {
 	// Validate required fields
 	if userDTO.Name == "" || userDTO.Email == "" || userDTO.UserID == "" {
-		return nil, domain.ErrValidation
+		return nil, fmt.Errorf("name, email, and userId are required: %w", domain.ErrValidation)
 	}
 	userID := strings.ToLower(userDTO.UserID)
 	// Efficiently check if userId exists in DB
 	existing, err := s.repo.FindByUserID(userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to check userId uniqueness: %w", err)
 	}
 	if existing != nil {
-		return nil, domain.ErrValidation // UserID already exists
+		return nil, fmt.Errorf("userId '%s' already exists: %w", userID, domain.ErrUserAlreadyExit)
 	}
 	// Create entity from DTO
 	userEntity := &entity.UserEntity{

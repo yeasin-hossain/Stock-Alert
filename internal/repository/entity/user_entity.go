@@ -9,7 +9,7 @@ import (
 // UserEntity represents the user as stored in the database
 type UserEntity struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty"`
-	UserID    int               `bson:"user_id"`
+	UserID    string            `bson:"userId"`
 	Name      string            `bson:"name"`
 	Email     string            `bson:"email"`
 	CreatedAt time.Time         `bson:"created_at"`

@@ -6,6 +6,9 @@ var (
 	// ErrUserNotFound is returned when a user is not found
 	ErrUserNotFound = errors.New("user not found")
 	
+	// if user already exists
+	ErrUserAlreadyExit = errors.New("user Already exit")
+	
 	// ErrValidation is returned when input validation fails
 	ErrValidation = errors.New("validation error")
 	

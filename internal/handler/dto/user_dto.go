@@ -7,7 +7,7 @@ import (
 // UserResponse is the DTO used for API responses
 type UserResponse struct {
 	ID        string    `json:"id"`
-	UserID    int       `json:"user_id"`
+	UserID    string    `json:"userId"`
 	Name      string    `json:"name"`
 	Email     string    `json:"email"`
 	CreatedAt time.Time `json:"created_at"`
@@ -16,8 +16,9 @@ type UserResponse struct {
 
 // UserCreateRequest is the DTO for creating a new user
 type UserCreateRequest struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	UserID string `json:"userId"`
+	Name   string `json:"name"`
+	Email  string `json:"email"`
 }
 
 // UserUpdateRequest is the DTO for updating an existing user

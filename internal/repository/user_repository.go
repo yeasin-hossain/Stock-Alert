@@ -26,7 +26,7 @@ func NewMongoUserRepository(collection *mongo.Collection) *MongoUserRepository {
 func (r *MongoUserRepository) FindAll() ([]entity.UserEntity, error) {
 	var userEntities []entity.UserEntity
 	
-	opts := options.Find().SetSort(bson.D{{Key: "id", Value: 1}})
+	opts := options.Find().SetSort(bson.D{{Key: "_id", Value: 1}})
 	cursor, err := r.collection.Find(context.Background(), bson.M{}, opts)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func (r *MongoUserRepository) FindAll() ([]entity.UserEntity, error) {
 }
 
 // FindByID retrieves a user entity by ID
-func (r *MongoUserRepository) FindByID(id int) (*entity.UserEntity, error) {
+func (r *MongoUserRepository) FindByID(id string) (*entity.UserEntity, error) {
 	var userEntity entity.UserEntity
 	err := r.collection.FindOne(context.Background(), bson.M{"id": id}).Decode(&userEntity)
 	if err != nil {
@@ -56,22 +56,7 @@ func (r *MongoUserRepository) FindByID(id int) (*entity.UserEntity, error) {
 
 // Create inserts a new user entity
 func (r *MongoUserRepository) Create(userEntity *entity.UserEntity) (*entity.UserEntity, error) {
-	// Find the maximum user ID and increment
-	var maxUserEntity entity.UserEntity
-	opts := options.FindOne().SetSort(bson.D{{Key: "id", Value: -1}})
-	err := r.collection.FindOne(context.Background(), bson.M{}, opts).Decode(&maxUserEntity)
-	
-	newUserID := 1
-	if err == nil {
-		// If we found a user, increment the ID
-		newUserID = maxUserEntity.UserID + 1
-	} else if err != mongo.ErrNoDocuments {
-		// If there was an error other than "not found"
-		return nil, err
-	}
-	
-	// Set the new User ID, created_at and updated_at
-	userEntity.UserID = newUserID
+	// Set the created_at and updated_at
 	userEntity.CreatedAt = time.Now()
 	userEntity.UpdatedAt = time.Now()
 	
@@ -105,7 +90,7 @@ func (r *MongoUserRepository) Update(userEntity *entity.UserEntity) (*entity.Use
 	userEntity.ID = existingEntity.ID
 	userEntity.UpdatedAt = time.Now()
 	
-	filter := bson.M{"user_id": userEntity.UserID}
+	filter := bson.M{"userId": userEntity.UserID}
 	update := bson.M{"$set": userEntity}
 	
 	_, err = r.collection.UpdateOne(context.Background(), filter, update)
@@ -117,8 +102,8 @@ func (r *MongoUserRepository) Update(userEntity *entity.UserEntity) (*entity.Use
 }
 
 // Delete removes a user entity by ID
-func (r *MongoUserRepository) Delete(id int) error {
-	result, err := r.collection.DeleteOne(context.Background(), bson.M{"id": id})
+func (r *MongoUserRepository) Delete(id string) error {
+	result, err := r.collection.DeleteOne(context.Background(), bson.M{"userId": id})
 	if err != nil {
 		return err
 	}
@@ -161,10 +146,10 @@ func (r *MongoUserRepository) DeleteByObjectID(id string) error {
 	return nil
 }
 
-// FindByUserID retrieves a user entity by user_id
+// FindByUserID retrieves a user entity by userId
 func (r *MongoUserRepository) FindByUserID(userID string) (*entity.UserEntity, error) {
 	var userEntity entity.UserEntity
-	err := r.collection.FindOne(context.Background(), bson.M{"user_id": userID}).Decode(&userEntity)
+	err := r.collection.FindOne(context.Background(), bson.M{"userId": userID}).Decode(&userEntity)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
