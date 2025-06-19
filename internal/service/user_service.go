@@ -1,6 +1,7 @@
 package service
 
 import (
+	"strings"
 	"time"
 	
 	"github.com/hello-api/internal/domain"
@@ -63,14 +64,25 @@ func (s *UserService) GetUserByID(id string) (*dto.UserResponse, error) {
 
 // CreateUser creates a new user from a DTO and returns a response DTO
 func (s *UserService) CreateUser(userDTO dto.UserCreateRequest) (*dto.UserResponse, error) {
+	// Validate required fields
+	if userDTO.Name == "" || userDTO.Email == "" || userDTO.UserID == "" {
+		return nil, domain.ErrValidation
+	}
+	userID := strings.ToLower(userDTO.UserID)
+	// Efficiently check if userId exists in DB
+	existing, err := s.repo.FindByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+	if existing != nil {
+		return nil, domain.ErrValidation // UserID already exists
+	}
 	// Create entity from DTO
 	userEntity := &entity.UserEntity{
+		UserID: userID,
 		Name:  userDTO.Name,
 		Email: userDTO.Email,
 	}
-	
-	// Validate business rules
-	// For example: validate email format, check for required fields, etc.
 	
 	// Save to repository
 	createdEntity, err := s.repo.Create(userEntity)

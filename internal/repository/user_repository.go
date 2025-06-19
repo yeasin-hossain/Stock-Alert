@@ -160,3 +160,16 @@ func (r *MongoUserRepository) DeleteByObjectID(id string) error {
 	}
 	return nil
 }
+
+// FindByUserID retrieves a user entity by user_id
+func (r *MongoUserRepository) FindByUserID(userID string) (*entity.UserEntity, error) {
+	var userEntity entity.UserEntity
+	err := r.collection.FindOne(context.Background(), bson.M{"user_id": userID}).Decode(&userEntity)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &userEntity, nil
+}
