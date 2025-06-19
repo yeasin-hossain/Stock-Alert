@@ -28,10 +28,10 @@ func InitializeRoutes() *mux.Router {
 
 	// User routes
 	r.HandleFunc("/users", userHandler.GetUsers).Methods("GET")
-	r.HandleFunc("/users/{id:[0-9]+}", userHandler.GetUser).Methods("GET")
+	r.HandleFunc("/users/{id:[a-fA-F0-9]{24}}", userHandler.GetUser).Methods("GET")
 	r.HandleFunc("/users", userHandler.CreateUser).Methods("POST")
-	r.HandleFunc("/users/{id:[0-9]+}", userHandler.UpdateUser).Methods("PUT")
-	r.HandleFunc("/users/{id:[0-9]+}", userHandler.DeleteUser).Methods("DELETE")
+	r.HandleFunc("/users/{id:[a-fA-F0-9]{24}}", userHandler.UpdateUser).Methods("PUT")
+	r.HandleFunc("/users/{id:[a-fA-F0-9]{24}}", userHandler.DeleteUser).Methods("DELETE")
 
 	return r
 }

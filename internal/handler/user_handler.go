@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
-	
+
 	"github.com/gorilla/mux"
 	"github.com/hello-api/internal/common"
 	"github.com/hello-api/internal/domain"
@@ -32,9 +31,17 @@ func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	common.RespondWithSuccess(w, http.StatusOK, users)
 }
 
-func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+func parseObjectIDParam(r *http.Request) (string, error) {
 	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+	id := vars["id"]
+	if len(id) != 24 {
+		return "", fmt.Errorf("invalid ObjectID length")
+	}
+	return id, nil
+}
+
+func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+	id, err := parseObjectIDParam(r)
 	if err != nil {
 		common.RespondWithError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID format")
 		return
@@ -45,7 +52,7 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		common.HandleError(w, err)
 		return
 	}
-	
+
 	if user == nil {
 		common.RespondWithError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
 		return
@@ -78,8 +85,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+	id, err := parseObjectIDParam(r)
 	if err != nil {
 		common.RespondWithError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID format")
 		return
@@ -90,14 +96,14 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		common.RespondWithError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request format")
 		return
 	}
-	
+
 	// Check if at least one field is provided
 	if request.Name == "" && request.Email == "" {
 		validationErr := fmt.Errorf("%w: at least one field (name or email) must be provided", domain.ErrValidation)
 		common.HandleError(w, validationErr)
 		return
 	}
-	
+
 	updatedUser, err := h.userService.UpdateUser(id, request)
 	if err != nil {
 		common.HandleError(w, err)
@@ -108,8 +114,7 @@ func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
+	id, err := parseObjectIDParam(r)
 	if err != nil {
 		common.RespondWithError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID format")
 		return

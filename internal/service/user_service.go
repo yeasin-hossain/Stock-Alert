@@ -49,15 +49,14 @@ func (s *UserService) GetAllUsers() ([]dto.UserResponse, error) {
 }
 
 // GetUserByID retrieves a user by ID and returns it as a DTO
-func (s *UserService) GetUserByID(id int) (*dto.UserResponse, error) {
-	userEntity, err := s.repo.FindByID(id)
+func (s *UserService) GetUserByID(id string) (*dto.UserResponse, error) {
+	userEntity, err := s.repo.FindByObjectID(id)
 	if err != nil {
 		return nil, err
 	}
 	if userEntity == nil {
 		return nil, nil
 	}
-	
 	response := mapEntityToDTO(userEntity)
 	return &response, nil
 }
@@ -85,9 +84,9 @@ func (s *UserService) CreateUser(userDTO dto.UserCreateRequest) (*dto.UserRespon
 }
 
 // UpdateUser updates an existing user from a DTO and returns a response DTO
-func (s *UserService) UpdateUser(id int, userDTO dto.UserUpdateRequest) (*dto.UserResponse, error) {
+func (s *UserService) UpdateUser(id string, userDTO dto.UserUpdateRequest) (*dto.UserResponse, error) {
 	// First, get the existing user
-	existingEntity, err := s.repo.FindByID(id)
+	existingEntity, err := s.repo.FindByObjectID(id)
 	if err != nil {
 		return nil, err
 	}
@@ -117,8 +116,8 @@ func (s *UserService) UpdateUser(id int, userDTO dto.UserUpdateRequest) (*dto.Us
 }
 
 // DeleteUser deletes a user by ID
-func (s *UserService) DeleteUser(id int) error {
+func (s *UserService) DeleteUser(id string) error {
 	// You could add additional business logic here
 	// For example, check if the user has related data before deleting
-	return s.repo.Delete(id)
+	return s.repo.DeleteByObjectID(id)
 }

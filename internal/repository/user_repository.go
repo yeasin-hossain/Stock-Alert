@@ -26,7 +26,7 @@ func NewMongoUserRepository(collection *mongo.Collection) *MongoUserRepository {
 func (r *MongoUserRepository) FindAll() ([]entity.UserEntity, error) {
 	var userEntities []entity.UserEntity
 	
-	opts := options.Find().SetSort(bson.D{{Key: "user_id", Value: 1}})
+	opts := options.Find().SetSort(bson.D{{Key: "id", Value: 1}})
 	cursor, err := r.collection.Find(context.Background(), bson.M{}, opts)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (r *MongoUserRepository) FindAll() ([]entity.UserEntity, error) {
 // FindByID retrieves a user entity by ID
 func (r *MongoUserRepository) FindByID(id int) (*entity.UserEntity, error) {
 	var userEntity entity.UserEntity
-	err := r.collection.FindOne(context.Background(), bson.M{"user_id": id}).Decode(&userEntity)
+	err := r.collection.FindOne(context.Background(), bson.M{"id": id}).Decode(&userEntity)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil // Not found, but not an error
@@ -58,7 +58,7 @@ func (r *MongoUserRepository) FindByID(id int) (*entity.UserEntity, error) {
 func (r *MongoUserRepository) Create(userEntity *entity.UserEntity) (*entity.UserEntity, error) {
 	// Find the maximum user ID and increment
 	var maxUserEntity entity.UserEntity
-	opts := options.FindOne().SetSort(bson.D{{Key: "user_id", Value: -1}})
+	opts := options.FindOne().SetSort(bson.D{{Key: "id", Value: -1}})
 	err := r.collection.FindOne(context.Background(), bson.M{}, opts).Decode(&maxUserEntity)
 	
 	newUserID := 1
@@ -118,7 +118,40 @@ func (r *MongoUserRepository) Update(userEntity *entity.UserEntity) (*entity.Use
 
 // Delete removes a user entity by ID
 func (r *MongoUserRepository) Delete(id int) error {
-	result, err := r.collection.DeleteOne(context.Background(), bson.M{"user_id": id})
+	result, err := r.collection.DeleteOne(context.Background(), bson.M{"id": id})
+	if err != nil {
+		return err
+	}
+	if result.DeletedCount == 0 {
+		return errors.New("user not found")
+	}
+	return nil
+}
+
+// FindByObjectID retrieves a user entity by MongoDB ObjectID
+func (r *MongoUserRepository) FindByObjectID(id string) (*entity.UserEntity, error) {
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+	var userEntity entity.UserEntity
+	err = r.collection.FindOne(context.Background(), bson.M{"_id": objID}).Decode(&userEntity)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &userEntity, nil
+}
+
+// DeleteByObjectID removes a user entity by MongoDB ObjectID
+func (r *MongoUserRepository) DeleteByObjectID(id string) error {
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	result, err := r.collection.DeleteOne(context.Background(), bson.M{"_id": objID})
 	if err != nil {
 		return err
 	}
