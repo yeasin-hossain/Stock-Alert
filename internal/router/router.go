@@ -14,15 +14,15 @@ func InitializeRoutes() *mux.Router {
 
 	// Initialize dependencies using interfaces for better decoupling
 	userCollection := db.GetCollection("users")
-	
+
 	// Repository layer
 	var userRepository domain.UserRepository
 	userRepository = repository.NewMongoUserRepository(userCollection)
-	
+
 	// Service layer
 	var userService domain.UserService
 	userService = service.NewUserService(userRepository)
-	
+
 	// Handler layer
 	userHandler := handler.NewUserHandler(userService)
 
@@ -32,6 +32,18 @@ func InitializeRoutes() *mux.Router {
 	r.HandleFunc("/users", userHandler.CreateUser).Methods("POST")
 	r.HandleFunc("/users/{id:[a-fA-F0-9]{24}}", userHandler.UpdateUser).Methods("PUT")
 	r.HandleFunc("/users/{id:[a-fA-F0-9]{24}}", userHandler.DeleteUser).Methods("DELETE")
+
+	// Alert routes
+	alertCollection := db.GetCollection("alerts")
+	alertRepository := repository.NewMongoAlertRepository(alertCollection)
+	alertService := service.NewAlertService(alertRepository)
+	alertHandler := handler.NewAlertHandler(alertService)
+
+	r.HandleFunc("/alerts", alertHandler.CreateAlert).Methods("POST")
+	r.HandleFunc("/alerts/{id}", alertHandler.GetAlert).Methods("GET")
+	r.HandleFunc("/alerts/user/{userId}", alertHandler.GetAlertsByUser).Methods("GET")
+	r.HandleFunc("/alerts/{id}", alertHandler.UpdateAlert).Methods("PUT")
+	r.HandleFunc("/alerts/{id}", alertHandler.DeleteAlert).Methods("DELETE")
 
 	return r
 }
