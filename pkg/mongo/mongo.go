@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"log"
+	"os"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -10,9 +11,11 @@ import (
 
 func ConnectMongo() *mongo.Client {
 	// Hardcoded MongoDB URI for development
-	mongoURI := "mongodb://localhost:27017/dev_db"
-	log.Printf("Using hardcoded MongoDB URI: %s", mongoURI)
-	
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://localhost:27017/dev_db"
+	}
+
 	clientOptions := options.Client().ApplyURI(mongoURI)
 
 	client, err := mongo.Connect(context.Background(), clientOptions)

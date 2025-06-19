@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 	"time"
-	
+
 	"github.com/joho/godotenv"
-	
+
 	"github.com/hello-api/internal/db"
 	"github.com/hello-api/internal/router"
 )
@@ -22,11 +22,12 @@ func main() {
 	}
 
 	var envFile string
-	if env == "dev" {
+	switch env {
+	case "dev":
 		envFile = "config/env/dev.env"
-	} else if env == "prod" {
+	case "prod":
 		envFile = "config/env/prod.env"
-	} else {
+	default:
 		log.Fatalf("Unknown ENV: %s", env)
 	}
 
@@ -36,7 +37,7 @@ func main() {
 	}
 
 	// MongoDB URI is now hardcoded in the ConnectMongo function
-	
+
 	// Connect to MongoDB
 	mongoClient := db.GetClient()
 	defer func() {
@@ -47,7 +48,7 @@ func main() {
 
 	// Initialize routes
 	r := router.InitializeRoutes()
-	
+
 	// Set up the server
 	server := &http.Server{
 		Addr:         ":8080",
@@ -56,7 +57,7 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
-	
+
 	log.Println("Starting server on port 8080")
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Server error: %v", err)
