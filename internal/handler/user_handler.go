@@ -2,10 +2,12 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	
 	"github.com/gorilla/mux"
+	"github.com/hello-api/internal/common"
 	"github.com/hello-api/internal/domain"
 	"github.com/hello-api/internal/handler/dto"
 )
@@ -23,112 +25,102 @@ func NewUserHandler(userService domain.UserService) *UserHandler {
 func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := h.userService.GetAllUsers()
 	if err != nil {
-		http.Error(w, "Failed to fetch users", http.StatusInternalServerError)
+		common.RespondWithError(w, http.StatusInternalServerError, "INTERNAL_ERROR", "Failed to fetch users")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
+	common.RespondWithSuccess(w, http.StatusOK, users)
 }
 
 func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		common.RespondWithError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID format")
 		return
 	}
 
 	user, err := h.userService.GetUserByID(id)
 	if err != nil {
-		http.Error(w, "Error fetching user", http.StatusInternalServerError)
+		common.HandleError(w, err)
 		return
 	}
 	
 	if user == nil {
-		http.Error(w, "User not found", http.StatusNotFound)
+		common.RespondWithError(w, http.StatusNotFound, "NOT_FOUND", "User not found")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	common.RespondWithSuccess(w, http.StatusOK, user)
 }
 
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var request dto.UserCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		common.RespondWithError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request format")
 		return
 	}
 
 	// Validate request (basic validation)
 	if request.Name == "" || request.Email == "" {
-		http.Error(w, "Name and email are required", http.StatusBadRequest)
+		validationErr := fmt.Errorf("%w: name and email are required", domain.ErrValidation)
+		common.HandleError(w, validationErr)
 		return
 	}
 
 	createdUser, err := h.userService.CreateUser(request)
 	if err != nil {
-		http.Error(w, "Failed to create user: "+err.Error(), http.StatusInternalServerError)
+		common.HandleError(w, err)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(createdUser)
+	common.RespondWithSuccess(w, http.StatusCreated, createdUser)
 }
 
 func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		common.RespondWithError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID format")
 		return
 	}
 
 	var request dto.UserUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		common.RespondWithError(w, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request format")
 		return
 	}
 	
 	// Check if at least one field is provided
 	if request.Name == "" && request.Email == "" {
-		http.Error(w, "At least one field (name or email) must be provided", http.StatusBadRequest)
+		validationErr := fmt.Errorf("%w: at least one field (name or email) must be provided", domain.ErrValidation)
+		common.HandleError(w, validationErr)
 		return
 	}
 	
 	updatedUser, err := h.userService.UpdateUser(id, request)
 	if err != nil {
-		if err == domain.ErrUserNotFound {
-			http.Error(w, "User not found", http.StatusNotFound)
-		} else {
-			http.Error(w, "Failed to update user: "+err.Error(), http.StatusInternalServerError)
-		}
+		common.HandleError(w, err)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(updatedUser)
+	common.RespondWithSuccess(w, http.StatusOK, updatedUser)
 }
 
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		common.RespondWithError(w, http.StatusBadRequest, "INVALID_ID", "Invalid user ID format")
 		return
 	}
 
 	err = h.userService.DeleteUser(id)
 	if err != nil {
-		if err == domain.ErrUserNotFound {
-			http.Error(w, "User not found", http.StatusNotFound)
-		} else {
-			http.Error(w, "Failed to delete user: "+err.Error(), http.StatusInternalServerError)
-		}
+		common.HandleError(w, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	// For DELETE operations, use NoContent with an empty success response
+	common.RespondWithSuccess(w, http.StatusNoContent, nil)
 }
