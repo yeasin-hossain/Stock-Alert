@@ -10,6 +10,7 @@ require (
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/google/pprof v0.0.0-20240402174815-29b9bb013b0f // indirect
+	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/onsi/ginkgo/v2 v2.13.0 // indirect
 	github.com/philippseith/signalr v0.7.0 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
